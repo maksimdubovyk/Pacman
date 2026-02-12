@@ -1,7 +1,5 @@
-#Pacman in Python with PyGame
-#https://github.com/hbokmann/Pacman
-  
-import pygame._view
+import pygame
+from ghost_ai import GhostAI
   
 black = (0,0,0)
 white = (255,255,255)
@@ -9,15 +7,10 @@ blue = (0,0,255)
 green = (0,255,0)
 red = (255,0,0)
 purple = (255,0,255)
-yellow   = ( 255, 255,   0)
-
-Trollicon=pygame.image.load('images/Trollman.png')
-pygame.display.set_icon(Trollicon)
+yellow   = ( 255, 255, 0)
 
 #Add music
 pygame.mixer.init()
-pygame.mixer.music.load('pacman.mp3')
-pygame.mixer.music.play(-1, 0.0)
 
 # This class represents the bar at the bottom that the player controls
 class Wall(pygame.sprite.Sprite):
@@ -221,117 +214,6 @@ class Ghost(Player):
       except IndexError:
          return [0,0]
 
-Pinky_directions = [
-[0,-30,4],
-[15,0,9],
-[0,15,11],
-[-15,0,23],
-[0,15,7],
-[15,0,3],
-[0,-15,3],
-[15,0,19],
-[0,15,3],
-[15,0,3],
-[0,15,3],
-[15,0,3],
-[0,-15,15],
-[-15,0,7],
-[0,15,3],
-[-15,0,19],
-[0,-15,11],
-[15,0,9]
-]
-
-Blinky_directions = [
-[0,-15,4],
-[15,0,9],
-[0,15,11],
-[15,0,3],
-[0,15,7],
-[-15,0,11],
-[0,15,3],
-[15,0,15],
-[0,-15,15],
-[15,0,3],
-[0,-15,11],
-[-15,0,3],
-[0,-15,11],
-[-15,0,3],
-[0,-15,3],
-[-15,0,7],
-[0,-15,3],
-[15,0,15],
-[0,15,15],
-[-15,0,3],
-[0,15,3],
-[-15,0,3],
-[0,-15,7],
-[-15,0,3],
-[0,15,7],
-[-15,0,11],
-[0,-15,7],
-[15,0,5]
-]
-
-Inky_directions = [
-[30,0,2],
-[0,-15,4],
-[15,0,10],
-[0,15,7],
-[15,0,3],
-[0,-15,3],
-[15,0,3],
-[0,-15,15],
-[-15,0,15],
-[0,15,3],
-[15,0,15],
-[0,15,11],
-[-15,0,3],
-[0,-15,7],
-[-15,0,11],
-[0,15,3],
-[-15,0,11],
-[0,15,7],
-[-15,0,3],
-[0,-15,3],
-[-15,0,3],
-[0,-15,15],
-[15,0,15],
-[0,15,3],
-[-15,0,15],
-[0,15,11],
-[15,0,3],
-[0,-15,11],
-[15,0,11],
-[0,15,3],
-[15,0,1],
-]
-
-Clyde_directions = [
-[-30,0,2],
-[0,-15,4],
-[15,0,5],
-[0,15,7],
-[-15,0,11],
-[0,-15,7],
-[-15,0,3],
-[0,15,7],
-[-15,0,7],
-[0,15,15],
-[15,0,15],
-[0,-15,3],
-[-15,0,11],
-[0,-15,7],
-[15,0,3],
-[0,-15,11],
-[15,0,9],
-]
-
-pl = len(Pinky_directions)-1
-bl = len(Blinky_directions)-1
-il = len(Inky_directions)-1
-cl = len(Clyde_directions)-1
-
 # Call this function so the Pygame library can initialize itself
 pygame.init()
   
@@ -383,22 +265,8 @@ def startGame():
 
   gate = setupGate(all_sprites_list)
 
-
-  p_turn = 0
-  p_steps = 0
-
-  b_turn = 0
-  b_steps = 0
-
-  i_turn = 0
-  i_steps = 0
-
-  c_turn = 0
-  c_steps = 0
-
-
   # Create the player paddle object
-  Pacman = Player( w, p_h, "images/Trollman.png" )
+  Pacman = Player( w, p_h, "images/pacman.png" )
   all_sprites_list.add(Pacman)
   pacman_collide.add(Pacman)
    
@@ -417,6 +285,8 @@ def startGame():
   Clyde=Ghost( c_w, m_h, "images/Clyde.png" )
   monsta_list.add(Clyde)
   all_sprites_list.add(Clyde)
+
+  ai = GhostAI(step=15, tile=30, board_size=606, seed=1)
 
   # Draw the grid
   for row in range(19):
@@ -446,8 +316,6 @@ def startGame():
   score = 0
 
   done = False
-
-  i = 0
 
   while done == False:
       # ALL EVENT PROCESSING SHOULD GO BELOW THIS COMMENT
@@ -480,29 +348,50 @@ def startGame():
       # ALL GAME LOGIC SHOULD GO BELOW THIS COMMENT
       Pacman.update(wall_list,gate)
 
-      returned = Pinky.changespeed(Pinky_directions,False,p_turn,p_steps,pl)
-      p_turn = returned[0]
-      p_steps = returned[1]
-      Pinky.changespeed(Pinky_directions,False,p_turn,p_steps,pl)
-      Pinky.update(wall_list,False)
+      ghosts = [Blinky, Pinky, Inky, Clyde]
+      ai.set_ghost_direction(
+          ghost_name="pinky",
+          ghost=Pinky,
+          pacman=Pacman,
+          walls=wall_list,
+          gate=False,
+          other_ghosts=ghosts,
+          blinky=Blinky
+      )
+      Pinky.update(wall_list, False)
 
-      returned = Blinky.changespeed(Blinky_directions,False,b_turn,b_steps,bl)
-      b_turn = returned[0]
-      b_steps = returned[1]
-      Blinky.changespeed(Blinky_directions,False,b_turn,b_steps,bl)
-      Blinky.update(wall_list,False)
+      ai.set_ghost_direction(
+          ghost_name="blinky",
+          ghost=Blinky,
+          pacman=Pacman,
+          walls=wall_list,
+          gate=False,
+          other_ghosts=ghosts,
+          blinky=Blinky
+      )
+      Blinky.update(wall_list, False)
 
-      returned = Inky.changespeed(Inky_directions,False,i_turn,i_steps,il)
-      i_turn = returned[0]
-      i_steps = returned[1]
-      Inky.changespeed(Inky_directions,False,i_turn,i_steps,il)
-      Inky.update(wall_list,False)
+      ai.set_ghost_direction(
+          ghost_name="inky",
+          ghost=Inky,
+          pacman=Pacman,
+          walls=wall_list,
+          gate=False,
+          other_ghosts=ghosts,
+          blinky=Blinky
+      )
+      Inky.update(wall_list, False)
 
-      returned = Clyde.changespeed(Clyde_directions,"clyde",c_turn,c_steps,cl)
-      c_turn = returned[0]
-      c_steps = returned[1]
-      Clyde.changespeed(Clyde_directions,"clyde",c_turn,c_steps,cl)
-      Clyde.update(wall_list,False)
+      ai.set_ghost_direction(
+          ghost_name="clyde",
+          ghost=Clyde,
+          pacman=Pacman,
+          walls=wall_list,
+          gate=False,
+          other_ghosts=ghosts,
+          blinky=Blinky
+      )
+      Clyde.update(wall_list, False)
 
       # See if the Pacman block has collided with anything.
       blocks_hit_list = pygame.sprite.spritecollide(Pacman, block_list, True)
