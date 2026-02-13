@@ -1,4 +1,3 @@
-# ghost_ai.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -30,9 +29,9 @@ class GhostAI:
 
     def __init__(
         self,
-        step: int = 15,         # крок привида за 1 тик (у твоєму коді привиди ходять 15 px)
-        tile: int = 30,         # “тайл”/клітинка логіки (Pacman ходить 30 px)
-        board_size: int = 606,  # розмір поля
+        step: int = 15,
+        tile: int = 30,
+        board_size: int = 606,
         seed: int = 1
     ) -> None:
         self.step = step
@@ -40,12 +39,11 @@ class GhostAI:
         self.board_size = board_size
         self.rng = random.Random(seed)
 
-        # Кути для scatter (можеш поміняти)
         self.scatter_targets: Dict[str, Point] = {
-            "blinky": (board_size - 30, 30),                 # top-right
-            "pinky": (30, 30),                               # top-left
-            "inky": (board_size - 30, board_size - 30),      # bottom-right
-            "clyde": (30, board_size - 30),                  # bottom-left
+            "blinky": (board_size - 30, 30),
+            "pinky": (30, 30),
+            "inky": (board_size - 30, board_size - 30),
+            "clyde": (30, board_size - 30),
         }
 
         self.weights: Dict[str, Weights] = {
@@ -53,6 +51,7 @@ class GhostAI:
             "pinky":  Weights(w_dist=1.0, w_reverse=2.0, w_separation=0.2, w_jitter=0.0),
             "inky":   Weights(w_dist=1.0, w_reverse=2.0, w_separation=0.7, w_jitter=0.35),
             "clyde":  Weights(w_dist=1.0, w_reverse=2.0, w_separation=0.3, w_jitter=0.05),
+            "converge": Weights(w_dist=1.0, w_reverse=0.0, w_separation=0.0, w_jitter=0.0),
         }
 
     def set_ghost_direction(
@@ -64,8 +63,10 @@ class GhostAI:
         gate: Optional[pygame.sprite.Group] = None,
         other_ghosts: Optional[Iterable[pygame.sprite.Sprite]] = None,
         blinky: Optional[pygame.sprite.Sprite] = None,
+        role_override: Optional[Dict[str, str]] = None,
     ) -> None:
-        name = ghost_name.lower()
+        ghost_id = ghost_name.lower()
+        role = (role_override or {}).get(ghost_id, ghost_id)
         other_list = [g for g in (other_ghosts or []) if g is not ghost]
 
         possible = self._possible_moves(ghost, walls, gate)
@@ -74,8 +75,8 @@ class GhostAI:
             ghost.change_y = 0
             return
 
-        target = self._compute_target(name, ghost, pacman, blinky)
-        w = self.weights.get(name, Weights())
+        target = self._compute_target(role, ghost, pacman, blinky)
+        w = self.weights.get(role, Weights())
 
         best_move = self._choose_best_move(
             ghost=ghost,

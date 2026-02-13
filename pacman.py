@@ -1,5 +1,6 @@
 import pygame
 from ghost_ai import GhostAI
+from meta_rules_controller import MetaRulesController, RoleSwapConfig, ConvergeConfig
   
 black = (0,0,0)
 white = (255,255,255)
@@ -287,7 +288,21 @@ def startGame():
   all_sprites_list.add(Clyde)
 
   ai = GhostAI(step=15, tile=30, board_size=606, seed=1)
-
+  meta = MetaRulesController(
+      tile=30,
+      config=RoleSwapConfig(
+          safe_distance_tiles=6.0,
+          escape_ticks_threshold=50,
+          swap_cooldown_ticks=30,
+          rotation_step=1
+      ),
+      converge_config=ConvergeConfig(
+          radius_tiles=6.0,
+          required_sectors=3,
+          hold_ticks=30,
+          cooldown_ticks=30
+      )
+  )
   # Draw the grid
   for row in range(19):
       for column in range(19):
@@ -348,15 +363,24 @@ def startGame():
       # ALL GAME LOGIC SHOULD GO BELOW THIS COMMENT
       Pacman.update(wall_list,gate)
 
-      ghosts = [Blinky, Pinky, Inky, Clyde]
+      ghosts = {
+          "blinky": Blinky,
+          "pinky": Pinky,
+          "inky": Inky,
+          "clyde": Clyde
+      }
+      role_map = meta.update(Pacman, ghosts)
+      role_to_ghost = meta.role_to_ghost(ghosts)
+      blinky_role_sprite = role_to_ghost.get("blinky")
       ai.set_ghost_direction(
           ghost_name="pinky",
           ghost=Pinky,
           pacman=Pacman,
           walls=wall_list,
           gate=False,
-          other_ghosts=ghosts,
-          blinky=Blinky
+          other_ghosts=ghosts.values(),
+          blinky=blinky_role_sprite,
+          role_override=role_map
       )
       Pinky.update(wall_list, False)
 
@@ -366,8 +390,9 @@ def startGame():
           pacman=Pacman,
           walls=wall_list,
           gate=False,
-          other_ghosts=ghosts,
-          blinky=Blinky
+          other_ghosts=ghosts.values(),
+          blinky=blinky_role_sprite,
+          role_override=role_map
       )
       Blinky.update(wall_list, False)
 
@@ -377,8 +402,9 @@ def startGame():
           pacman=Pacman,
           walls=wall_list,
           gate=False,
-          other_ghosts=ghosts,
-          blinky=Blinky
+          other_ghosts=ghosts.values(),
+          blinky=blinky_role_sprite,
+          role_override=role_map
       )
       Inky.update(wall_list, False)
 
@@ -388,8 +414,9 @@ def startGame():
           pacman=Pacman,
           walls=wall_list,
           gate=False,
-          other_ghosts=ghosts,
-          blinky=Blinky
+          other_ghosts=ghosts.values(),
+          blinky=blinky_role_sprite,
+          role_override=role_map
       )
       Clyde.update(wall_list, False)
 
